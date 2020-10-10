@@ -7,7 +7,27 @@ use glsl::syntax::ShaderStage;
 use anyhow::{Result, Context};
 
 fn main() -> Result<()> {
-    let runner = shader_executor::ShaderExecutor::new()?;
+    let mut runner = shader_executor::ShaderExecutor::new()?;
+    let shader_src = std::fs::read("op.comp.spv")?;
+
+    const GROUPS: usize = 4;
+    const ENTRIES_PER_GROUP: usize = 16;
+    const ENTRIES: usize = ENTRIES_PER_GROUP * GROUPS;
+    type Int = i32;
+    let mut buf: Vec<u8> = Vec::with_capacity(ENTRIES * std::mem::size_of::<Int>());
+    for i in 0..ENTRIES as Int {
+        buf.extend(i.to_le_bytes().iter());
+    }
+
+    runner.run_shader(&shader_src, &mut buf, GROUPS as _)?;
+
+    for chunk in buf.chunks(4) {
+        let mut buf = [0u8; 4];
+        buf.copy_from_slice(chunk);
+        let i = Int::from_le_bytes(buf);
+        println!("{}", i);
+    }
+
     Ok(())
 }
 

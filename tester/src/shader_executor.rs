@@ -144,8 +144,7 @@ impl ShaderExecutor {
 
     pub fn run_shader(&mut self, shader_spv: &[u8], shader_buf: &mut [u8], invocations: u32) -> Result<()> {
         // Load shader
-        let shader_spirv = std::fs::read("shaders/op.comp.spv").context("Shader failed to load")?;
-        let shader_decoded = decode_spv(&shader_spirv).context("Shader decode failed")?;
+        let shader_decoded = decode_spv(&shader_spv).context("Shader decode failed")?;
         let create_info = vk::ShaderModuleCreateInfoBuilder::new().code(&shader_decoded);
         let shader_module =
             unsafe { self.device.create_shader_module(&create_info, None, None) }.result()?;
@@ -249,7 +248,11 @@ impl ShaderExecutor {
         shader_buf.copy_from_slice(mapped.read());
 
         self.allocator.free(&self.device, buffer_allocation);
-
+        unsafe {
+            self.device.destroy_shader_module(Some(shader_module), None);
+            self.device.destroy_pipeline(Some(pipeline), None);
+            self.device.destroy_pipeline_layout(Some(pipeline_layout), None);
+        }
         Ok(())
     }
 }
