@@ -1,0 +1,6 @@
+struct Particle {
+    vec3 position;
+    float mass;
+    vec3 velocity;
+    float charge;
+};
