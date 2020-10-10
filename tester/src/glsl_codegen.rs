@@ -1,5 +1,5 @@
-use crate::abstract_data::*;
-use crate::Result;
+use struct_translator::*;
+use struct_translator::Result;
 use glsl::parser::Parse;
 use glsl::syntax::{
     ArrayedIdentifier, Declaration, ExternalDeclaration, FullySpecifiedType, Identifier,

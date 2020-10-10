@@ -1,10 +1,14 @@
+mod glsl_codegen;
+use glsl_codegen::make_test;
 use struct_translator::*;
 use glsl::parser::Parse;
 use glsl::syntax::ShaderStage;
-use anyhow::Result;
+use anyhow::{Result, Context};
 
 fn main() -> Result<()> {
-    let text = std::fs::read_to_string("particle2.comp")?;
+    let mut args = std::env::args().skip(1);
+    let shader_path = args.next().context("Requires shader")?;
+    let text = std::fs::read_to_string(shader_path)?;
     let mut stage = ShaderStage::parse(text)?;
 
     let fields = get_abstract_fields(&mut stage)?;

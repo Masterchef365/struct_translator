@@ -1,7 +1,5 @@
 mod abstract_data;
 mod extraction;
-mod glsl_codegen;
-pub use glsl_codegen::*;
 pub use extraction::*;
 pub use abstract_data::*;
 use glsl::syntax::TypeSpecifierNonArray;

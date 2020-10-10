@@ -1,0 +1,10 @@
+[package]
+name = "tester"
+version = "0.1.0"
+authors = ["Masterchef365 <duncan.freeman1@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+glsl = "5.0"
+anyhow = "1"
+struct_translator = { path = "../translator" }
