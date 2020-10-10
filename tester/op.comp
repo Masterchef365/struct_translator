@@ -1,0 +1,11 @@
+#version 450
+layout (local_size_x = 16) in;
+layout(set = 0, binding = 0) buffer Data {
+    int data[];
+} buf;
+
+uint gid = gl_GlobalInvocationID.x;
+
+void main() {
+    buf.data[gid] *= buf.data[gid];
+}

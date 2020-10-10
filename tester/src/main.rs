@@ -20,6 +20,7 @@ fn main() -> Result<()> {
     }
 
     runner.run_shader(&shader_src, &mut buf, GROUPS as _)?;
+    runner.run_shader(&shader_src, &mut buf, GROUPS as _)?;
 
     for chunk in buf.chunks(4) {
         let mut buf = [0u8; 4];

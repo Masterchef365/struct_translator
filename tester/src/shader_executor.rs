@@ -180,6 +180,21 @@ impl ShaderExecutor {
             .allocate(&self.device, buffer, MemoryTypeFinder::dynamic())
             .result()?;
 
+        // Update descriptor set to include the buffer
+        unsafe {
+            self.device.update_descriptor_sets(
+                &[vk::WriteDescriptorSetBuilder::new()
+                .dst_set(self.descriptor_set)
+                .dst_binding(0)
+                .descriptor_type(vk::DescriptorType::STORAGE_BUFFER)
+                .buffer_info(&[vk::DescriptorBufferInfoBuilder::new()
+                    .buffer(buffer)
+                    .offset(buffer_allocation.region().start)
+                    .range(buffer_size as u64)])],
+                    &[],
+            )
+        };
+
         // Write command buffer
         unsafe {
             self.device.reset_command_buffer(self.command_buffer, None).result()?;
@@ -211,21 +226,6 @@ impl ShaderExecutor {
 
             self.device.end_command_buffer(self.command_buffer).result()?;
         }
-
-        // Update descriptor set to include the buffer
-        unsafe {
-            self.device.update_descriptor_sets(
-                &[vk::WriteDescriptorSetBuilder::new()
-                .dst_set(self.descriptor_set)
-                .dst_binding(0)
-                .descriptor_type(vk::DescriptorType::STORAGE_BUFFER)
-                .buffer_info(&[vk::DescriptorBufferInfoBuilder::new()
-                    .buffer(buffer)
-                    .offset(buffer_allocation.region().start)
-                    .range(buffer_size as u64)])],
-                    &[],
-            )
-        };
 
         // Copy data to input
         let mut mapped = buffer_allocation.map(&self.device, ..).result()?;
