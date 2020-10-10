@@ -2,14 +2,19 @@ use crate::abstract_data::*;
 use crate::Result;
 use glsl::syntax::{
     ArrayedIdentifier, Identifier, NonEmpty, StructFieldSpecifier, StructSpecifier, TypeName,
-    TypeSpecifier, TranslationUnit, ShaderStage,
+    TypeSpecifier, TranslationUnit, ShaderStage, ExternalDeclaration, Declaration, InitDeclaratorList, TypeSpecifierNonArray, FullySpecifiedType, SingleDeclaration,
 };
 use glsl::parser::Parse;
 
 const PRELUDE: &str = "
-layout(std430, binding = 0) buffer Collection {
-    TestBuffer buf[];
+layout (local_size_x = 64) in;
+
+layout(std140, binding = 0) buffer Collection {
+    TestStruct buf[];
 };
+
+uint gid = gl_GlobalInvocationID.x;
+
 ";
 
 pub fn abstract_to_field(field: &AbstractField) -> Result<StructFieldSpecifier> {
@@ -44,7 +49,33 @@ pub fn abstract_to_struct(fields: &[AbstractField], name: &str) -> Result<Struct
     Ok(StructSpecifier { name, fields })
 }
 
+fn decl_struct(struct_: StructSpecifier) -> ExternalDeclaration {
+    let ty = TypeSpecifierNonArray::Struct(struct_);
+    let ty = TypeSpecifier {
+        ty, array_specifier: None,
+    };
+    let ty = FullySpecifiedType {
+        ty,
+        qualifier: None,
+    };
+    let head = SingleDeclaration {
+        ty,
+        name: None,
+        array_specifier: None,
+        initializer: None,
+    };
+    let decl = InitDeclaratorList {
+        head,
+        tail: vec![],
+    };
+    let decl = Declaration::InitDeclaratorList(decl);
+    ExternalDeclaration::Declaration(decl)
+}
+
 pub fn make_test(fields: &[AbstractField]) -> Result<TranslationUnit> {
-    let prelude = ShaderStage::parse(PRELUDE).unwrap();
-    Ok(prelude)
+    let mut output = ShaderStage::parse(PRELUDE).unwrap();
+    let struct_ = abstract_to_struct(&fields, "TestStruct")?;
+    let decl = decl_struct(struct_);
+    output.push(decl);
+    Ok(output)
 }
