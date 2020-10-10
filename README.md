@@ -4,9 +4,14 @@
 
 ## Roadmap
 * Extremely basic translation from a GLSL structure to a Rust one
+* GLSL Layout only
+* Tests! Tests galore!
 * Try to match up the alignment rules
-* Test harness
-* Test cases for odd alignments in GLSL.
+    * C/x86-64 and glsl/std140
+* Array support
+* Auto-reorder to minimize memory usage 
+* Layout qualifiers
+* Other platforms (with different alignment rules), std430
 * Eventually release this to the peeps in the Vulkan Discord and watch them poke holes in it
     * Recover from that emotionally and code-wise (probably)
 * Hints about _why_ certain descisions were made in text form
