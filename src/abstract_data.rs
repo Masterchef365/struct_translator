@@ -1,6 +1,6 @@
-use glsl::syntax::{TypeSpecifierNonArray, StructFieldSpecifier};
-use std::convert::{TryFrom, TryInto};
 use crate::Result;
+use glsl::syntax::{StructFieldSpecifier, TypeSpecifierNonArray};
+use std::convert::{TryFrom, TryInto};
 
 #[derive(Copy, Clone, Debug)]
 pub enum AbstractType {
@@ -17,7 +17,9 @@ pub struct AbstractField {
 }
 
 impl AbstractField {
-    pub fn extract_fields<'a>(field: &'a StructFieldSpecifier) -> Result<impl Iterator<Item=Result<Self>> + 'a> {
+    pub fn extract_fields<'a>(
+        field: &'a StructFieldSpecifier,
+    ) -> Result<impl Iterator<Item = Result<Self>> + 'a> {
         if field.qualifier.is_some() {
             return Err(crate::Error::QualifiersUnsupported);
         }
@@ -33,10 +35,7 @@ impl AbstractField {
                 return Err(crate::Error::ArraysUnsupported);
             }
             let name = ident.ident.0.clone();
-            Ok(Self {
-                name,
-                ty
-            })
+            Ok(Self { name, ty })
         }))
     }
 }
@@ -76,7 +75,18 @@ impl TryFrom<TypeSpecifierNonArray> for AbstractType {
             TypeSpecifierNonArray::Vec2 => Ok(Self::Vec2),
             TypeSpecifierNonArray::Vec3 => Ok(Self::Vec3),
             TypeSpecifierNonArray::Vec4 => Ok(Self::Vec4),
-            _ => Err(crate::Error::UnsupportedType { ty })
+            _ => Err(crate::Error::UnsupportedType { ty }),
+        }
+    }
+}
+
+impl Into<TypeSpecifierNonArray> for AbstractType {
+    fn into(self) -> TypeSpecifierNonArray {
+        match self {
+            Self::Float => TypeSpecifierNonArray::Float,
+            Self::Vec2 => TypeSpecifierNonArray::Vec2,
+            Self::Vec3 => TypeSpecifierNonArray::Vec3,
+            Self::Vec4 => TypeSpecifierNonArray::Vec4,
         }
     }
 }

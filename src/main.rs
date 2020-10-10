@@ -8,8 +8,18 @@ fn main() -> Result<()> {
     let mut stage = ShaderStage::parse(text)?;
 
     let fields = get_abstract_fields(&mut stage)?;
-    let naive = naive_layout_glsl_only(&fields);
-    summarize_layout(&naive);
+    //let naive = naive_layout_glsl_only(&fields);
+    //summarize_layout(&naive);
+
+    /*
+    let new_glsl = abstract_to_struct(&fields, "Bob")?;
+    glsl::transpiler::glsl::show_struct(&mut out, &new_glsl);
+    */
+
+    let code = make_test(&fields)?;
+    let mut out = String::new();
+    glsl::transpiler::glsl::show_translation_unit(&mut out, &code);
+    println!("{}", out);
 
     Ok(())
 }
