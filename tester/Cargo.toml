@@ -8,3 +8,4 @@ edition = "2018"
 glsl = "5.0"
 anyhow = "1"
 struct_translator = { path = "../translator" }
+erupt = "0.14"

@@ -1,4 +1,5 @@
 mod glsl_codegen;
+mod shader_executor;
 use glsl_codegen::make_test;
 use struct_translator::*;
 use glsl::parser::Parse;
@@ -6,6 +7,11 @@ use glsl::syntax::ShaderStage;
 use anyhow::{Result, Context};
 
 fn main() -> Result<()> {
+    let runner = shader_executor::ShaderExecutor::new()?;
+    Ok(())
+}
+
+fn pmain() -> Result<()> {
     let mut args = std::env::args().skip(1);
     let shader_path = args.next().context("Requires shader")?;
     let text = std::fs::read_to_string(shader_path)?;
