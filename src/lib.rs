@@ -1,4 +1,6 @@
 mod abstract_data;
+mod extraction;
+pub use extraction::*;
 pub use abstract_data::*;
 use glsl::syntax::TypeSpecifierNonArray;
 use thiserror::Error;
