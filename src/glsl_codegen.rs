@@ -1,20 +1,22 @@
 use crate::abstract_data::*;
 use crate::Result;
-use glsl::syntax::{
-    ArrayedIdentifier, Identifier, NonEmpty, StructFieldSpecifier, StructSpecifier, TypeName,
-    TypeSpecifier, TranslationUnit, ShaderStage, ExternalDeclaration, Declaration, InitDeclaratorList, TypeSpecifierNonArray, FullySpecifiedType, SingleDeclaration,
-};
 use glsl::parser::Parse;
+use glsl::syntax::{
+    ArrayedIdentifier, Declaration, ExternalDeclaration, FullySpecifiedType, Identifier,
+    InitDeclaratorList, NonEmpty, ShaderStage, SingleDeclaration, StructFieldSpecifier,
+    StructSpecifier, TranslationUnit, TypeName, TypeSpecifier, TypeSpecifierNonArray,
+};
 
 const PRELUDE: &str = "
+#version 450
 layout (local_size_x = 64) in;
+uint gid = gl_GlobalInvocationID.x;
+";
 
+const BINDS: &str = "
 layout(std140, binding = 0) buffer Collection {
     TestStruct buf[];
 };
-
-uint gid = gl_GlobalInvocationID.x;
-
 ";
 
 pub fn abstract_to_field(field: &AbstractField) -> Result<StructFieldSpecifier> {
@@ -52,7 +54,8 @@ pub fn abstract_to_struct(fields: &[AbstractField], name: &str) -> Result<Struct
 fn decl_struct(struct_: StructSpecifier) -> ExternalDeclaration {
     let ty = TypeSpecifierNonArray::Struct(struct_);
     let ty = TypeSpecifier {
-        ty, array_specifier: None,
+        ty,
+        array_specifier: None,
     };
     let ty = FullySpecifiedType {
         ty,
@@ -64,10 +67,7 @@ fn decl_struct(struct_: StructSpecifier) -> ExternalDeclaration {
         array_specifier: None,
         initializer: None,
     };
-    let decl = InitDeclaratorList {
-        head,
-        tail: vec![],
-    };
+    let decl = InitDeclaratorList { head, tail: vec![] };
     let decl = Declaration::InitDeclaratorList(decl);
     ExternalDeclaration::Declaration(decl)
 }
@@ -77,5 +77,8 @@ pub fn make_test(fields: &[AbstractField]) -> Result<TranslationUnit> {
     let struct_ = abstract_to_struct(&fields, "TestStruct")?;
     let decl = decl_struct(struct_);
     output.push(decl);
+    let mut binds = ShaderStage::parse(BINDS).unwrap();
+    (output.0).0.append(&mut (binds.0).0);
+
     Ok(output)
 }
