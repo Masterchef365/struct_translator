@@ -116,7 +116,8 @@ impl ShaderExecutor {
         let create_info = vk::CommandPoolCreateInfoBuilder::new()
             .flags(vk::CommandPoolCreateFlags::RESET_COMMAND_BUFFER)
             .queue_family_index(queue_family_index);
-        let command_pool = unsafe { device.create_command_pool(&create_info, None, None) }.result()?;
+        let command_pool =
+            unsafe { device.create_command_pool(&create_info, None, None) }.result()?;
 
         // Buffers:
         let allocate_info = vk::CommandBufferAllocateInfoBuilder::new()
@@ -126,7 +127,6 @@ impl ShaderExecutor {
 
         let command_buffer =
             unsafe { device.allocate_command_buffers(&allocate_info) }.result()?[0];
-
 
         Ok(Self {
             queue,
@@ -142,7 +142,12 @@ impl ShaderExecutor {
         })
     }
 
-    pub fn run_shader(&mut self, shader_spv: &[u8], shader_buf: &mut [u8], invocations: u32) -> Result<()> {
+    pub fn run_shader(
+        &mut self,
+        shader_spv: &[u8],
+        shader_buf: &mut [u8],
+        invocations: u32,
+    ) -> Result<()> {
         // Load shader
         let shader_decoded = decode_spv(&shader_spv).context("Shader decode failed")?;
         let create_info = vk::ShaderModuleCreateInfoBuilder::new().code(&shader_decoded);
@@ -165,8 +170,11 @@ impl ShaderExecutor {
         let create_info = vk::ComputePipelineCreateInfoBuilder::new()
             .stage(stage)
             .layout(pipeline_layout);
-        let pipeline =
-            unsafe { self.device.create_compute_pipelines(None, &[create_info], None) }.result()?[0];
+        let pipeline = unsafe {
+            self.device
+                .create_compute_pipelines(None, &[create_info], None)
+        }
+        .result()?[0];
 
         // Allocate I/O buffer
         let buffer_size = shader_buf.len();
@@ -176,7 +184,8 @@ impl ShaderExecutor {
             .size(buffer_size as u64);
 
         let buffer = unsafe { self.device.create_buffer(&create_info, None, None) }.result()?;
-        let buffer_allocation = self.allocator
+        let buffer_allocation = self
+            .allocator
             .allocate(&self.device, buffer, MemoryTypeFinder::dynamic())
             .result()?;
 
@@ -184,23 +193,27 @@ impl ShaderExecutor {
         unsafe {
             self.device.update_descriptor_sets(
                 &[vk::WriteDescriptorSetBuilder::new()
-                .dst_set(self.descriptor_set)
-                .dst_binding(0)
-                .descriptor_type(vk::DescriptorType::STORAGE_BUFFER)
-                .buffer_info(&[vk::DescriptorBufferInfoBuilder::new()
-                    .buffer(buffer)
-                    .offset(buffer_allocation.region().start)
-                    .range(buffer_size as u64)])],
-                    &[],
+                    .dst_set(self.descriptor_set)
+                    .dst_binding(0)
+                    .descriptor_type(vk::DescriptorType::STORAGE_BUFFER)
+                    .buffer_info(&[vk::DescriptorBufferInfoBuilder::new()
+                        .buffer(buffer)
+                        .offset(buffer_allocation.region().start)
+                        .range(buffer_size as u64)])],
+                &[],
             )
         };
 
         // Write command buffer
         unsafe {
-            self.device.reset_command_buffer(self.command_buffer, None).result()?;
+            self.device
+                .reset_command_buffer(self.command_buffer, None)
+                .result()?;
             let begin_info = vk::CommandBufferBeginInfoBuilder::new()
                 .flags(vk::CommandBufferUsageFlags::ONE_TIME_SUBMIT);
-            self.device.begin_command_buffer(self.command_buffer, &begin_info).result()?;
+            self.device
+                .begin_command_buffer(self.command_buffer, &begin_info)
+                .result()?;
 
             self.device.cmd_bind_pipeline(
                 self.command_buffer,
@@ -217,14 +230,12 @@ impl ShaderExecutor {
                 &[],
             );
 
-            self.device.cmd_dispatch(
-                self.command_buffer,
-                invocations,
-                1,
-                1,
-            );
+            self.device
+                .cmd_dispatch(self.command_buffer, invocations, 1, 1);
 
-            self.device.end_command_buffer(self.command_buffer).result()?;
+            self.device
+                .end_command_buffer(self.command_buffer)
+                .result()?;
         }
 
         // Copy data to input
@@ -234,13 +245,10 @@ impl ShaderExecutor {
         // Submit command buffer, and wait on data
         unsafe {
             let command_buffers = [self.command_buffer];
-            let submit_infos = [vk::SubmitInfoBuilder::new()
-                .command_buffers(&command_buffers)];
-            self.device.queue_submit(
-                self.queue,
-                &submit_infos,
-                None
-            ).result()?;
+            let submit_infos = [vk::SubmitInfoBuilder::new().command_buffers(&command_buffers)];
+            self.device
+                .queue_submit(self.queue, &submit_infos, None)
+                .result()?;
             self.device.queue_wait_idle(self.queue).result()?;
         }
 
@@ -251,7 +259,8 @@ impl ShaderExecutor {
         unsafe {
             self.device.destroy_shader_module(Some(shader_module), None);
             self.device.destroy_pipeline(Some(pipeline), None);
-            self.device.destroy_pipeline_layout(Some(pipeline_layout), None);
+            self.device
+                .destroy_pipeline_layout(Some(pipeline_layout), None);
         }
         Ok(())
     }
@@ -274,10 +283,71 @@ fn select_device(instance: &InstanceLoader) -> Result<(u32, vk::PhysicalDevice)>
 impl Drop for ShaderExecutor {
     fn drop(&mut self) {
         unsafe {
-            self.device.destroy_command_pool(Some(self.command_pool), None);
-            self.device.destroy_descriptor_pool(Some(self.descriptor_pool), None);
-            self.device.destroy_descriptor_set_layout(Some(self.descriptor_set_layout), None);
+            self.device
+                .destroy_command_pool(Some(self.command_pool), None);
+            self.device
+                .destroy_descriptor_pool(Some(self.descriptor_pool), None);
+            self.device
+                .destroy_descriptor_set_layout(Some(self.descriptor_set_layout), None);
             self.device.destroy_device(None);
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use shaderc::{Compiler, ShaderKind};
+
+    #[test]
+    fn test_shader_exec() {
+        let shader_src = "
+            #version 450
+            layout (local_size_x = 16) in;
+            layout(set = 0, binding = 0) buffer Data {
+                int data[];
+            } buf;
+            
+            uint gid = gl_GlobalInvocationID.x;
+            
+            void main() {
+                buf.data[gid] *= buf.data[gid];
+            }";
+
+        let mut compiler = Compiler::new().expect("Couldn't find a compiler");
+
+        let spirv = compiler
+            .compile_into_spirv(
+                shader_src,
+                ShaderKind::Compute,
+                "test_shader.comp",
+                "main",
+                None,
+            )
+            .expect("Failed to compile shader!");
+
+        let mut runner = ShaderExecutor::new().expect("Failed to init runner");
+
+        const GROUPS: usize = 4;
+        const ENTRIES_PER_GROUP: usize = 16;
+        const ENTRIES: usize = ENTRIES_PER_GROUP * GROUPS;
+
+        type Int = i32;
+
+        let mut buf: Vec<u8> = Vec::with_capacity(ENTRIES * std::mem::size_of::<Int>());
+        for i in 0..ENTRIES as Int {
+            buf.extend(i.to_le_bytes().iter());
+        }
+
+        runner
+            .run_shader(spirv.as_binary_u8(), &mut buf, GROUPS as _)
+            .expect("Shader failed to run");
+
+        for (idx, chunk) in buf.chunks(4).enumerate() {
+            let mut buf = [0u8; 4];
+            buf.copy_from_slice(chunk);
+            let i = Int::from_le_bytes(buf);
+            assert_eq!(i, (idx * idx) as i32);
         }
     }
 }
