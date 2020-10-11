@@ -306,12 +306,12 @@ mod tests {
             layout (local_size_x = 16) in;
             layout(set = 0, binding = 0) buffer Data {
                 int data[];
-            } buf;
+            };
             
             uint gid = gl_GlobalInvocationID.x;
             
             void main() {
-                buf.data[gid] *= buf.data[gid];
+                data[gid] *= data[gid];
             }";
 
         let mut compiler = Compiler::new().expect("Couldn't find a compiler");
