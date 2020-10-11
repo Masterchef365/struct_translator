@@ -42,7 +42,7 @@ pub fn summarize_layout(fgs: &[FieldGap]) {
             FieldGap::Gap(gap) => *gap,
             FieldGap::Field(f) => f.ty.size(),
         };
-        print!("{:2}-{:2}: ", offset, offset + size);
+        print!("{:2}-{:2}: ", offset, offset + size - 1);
         match fg {
             FieldGap::Gap(_) => {
                 println!("<gap> ({})", size);

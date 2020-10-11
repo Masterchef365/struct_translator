@@ -26,8 +26,6 @@ fn main() -> Result<()> {
     const INVOCATIONS: u32 = 1;
     let mut test = TestCase::new(&fields, INVOCATIONS, 0)?;
     println!("{}", test.glsl_code);
-    //println!("{:?}", test.initial);
-    //println!("{:?}", test.expected);
 
     let mut compiler = Compiler::new().context("Couldn't find a compiler")?;
 
@@ -48,59 +46,9 @@ fn main() -> Result<()> {
         println!("Test OK");
     } else {
         for (idx, (test, expect)) in test.initial.iter().zip(test.expected.iter()).enumerate() {
-            println!("{:02}: {:02X} {:02X}", idx, test, expect);
+            println!("{:02}: {:02X} {:02X}", idx, expect, test);
         }
     }
 
     Ok(())
 }
-
-/*
-   fn main() -> Result<()> {
-   let mut runner = shader_executor::ShaderExecutor::new()?;
-   let shader_src = std::fs::read("op.comp.spv")?;
-
-   const GROUPS: usize = 4;
-   const ENTRIES_PER_GROUP: usize = 16;
-   const ENTRIES: usize = ENTRIES_PER_GROUP * GROUPS;
-   type Int = i32;
-   let mut buf: Vec<u8> = Vec::with_capacity(ENTRIES * std::mem::size_of::<Int>());
-   for i in 0..ENTRIES as Int {
-   buf.extend(i.to_le_bytes().iter());
-   }
-
-   runner.run_shader(&shader_src, &mut buf, GROUPS as _)?;
-
-   for chunk in buf.chunks(4) {
-   let mut buf = [0u8; 4];
-   buf.copy_from_slice(chunk);
-   let i = Int::from_le_bytes(buf);
-   println!("{}", i);
-   }
-
-   Ok(())
-   }
-
-   fn pmain() -> Result<()> {
-   let mut args = std::env::args().skip(1);
-   let shader_path = args.next().context("Requires shader")?;
-   let text = std::fs::read_to_string(shader_path)?;
-   let mut stage = ShaderStage::parse(text)?;
-
-   let fields = get_abstract_fields(&mut stage)?;
-//let naive = naive_layout_glsl_only(&fields);
-//summarize_layout(&naive);
-
-/*
-let new_glsl = abstract_to_struct(&fields, "Bob")?;
-glsl::transpiler::glsl::show_struct(&mut out, &new_glsl);
-*/
-
-let code = make_test(&fields)?;
-let mut out = String::new();
-glsl::transpiler::glsl::show_translation_unit(&mut out, &code);
-println!("{}", out);
-
-Ok(())
-    }
-*/
