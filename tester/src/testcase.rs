@@ -19,7 +19,7 @@ fn add_contiguous_floats(
     gid: u32,
     rng: &mut impl Rng,
 ) {
-    let vi = rng.gen_range(-100.0, 100.0);
+    let vi: f32 = rng.gen_range(-100.0, 100.0);
     let ve = vi * gid as f32;
     for _ in 0..count {
         initial.extend_from_slice(&vi.to_le_bytes()[..]);
@@ -53,7 +53,10 @@ impl TestCase {
         for gid in 0..invocations * LOCAL_SIZE {
             for fg in &naive_layout {
                 match fg {
-                    FieldGap::Gap(g) => initial.extend((0..*g).map(|_| 0)),
+                    FieldGap::Gap(g) => {
+                        initial.extend((0..*g).map(|_| 0));
+                        expected.extend((0..*g).map(|_| 0));
+                    }
                     FieldGap::Field(f) => {
                         add_test_value(&f.ty, &mut initial, &mut expected, gid, &mut rng)
                     }
